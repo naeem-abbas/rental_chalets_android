@@ -19,6 +19,8 @@ import android.widget.CheckBox;
 import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.ScrollView;
 import android.widget.Spinner;
 import android.widget.TextView;
@@ -177,10 +179,19 @@ public class MainActivity extends AppCompatActivity {
         activityBuffetTitle.setTypeface(Typeface.DEFAULT_BOLD);
         layout.addView(activityBuffetTitle);
 
-        // Add the Activity Buffet text field
-        EditText activityBuffetEditText = new EditText(context);
-        activityBuffetEditText.setHint("Enter Activity Buffet");
-        layout.addView(activityBuffetEditText);
+        // Add the Activity Buffet radio field
+        RadioGroup activityBuffetRadioGroup = new RadioGroup(context);
+        RadioButton everydayRadioButton = new RadioButton(context);
+        everydayRadioButton.setText("Everyday");
+        RadioButton daysOfWeekRadioButton = new RadioButton(context);
+        daysOfWeekRadioButton.setText("Day of Week");
+        RadioButton dayOfWeekRadioButton = new RadioButton(context);
+        dayOfWeekRadioButton.setText("Weekends");
+
+        activityBuffetRadioGroup.addView(everydayRadioButton);
+        activityBuffetRadioGroup.addView(daysOfWeekRadioButton);
+        activityBuffetRadioGroup.addView(dayOfWeekRadioButton);
+        layout.addView(activityBuffetRadioGroup);
         //add divider and the margin
         addDividerAndMargin(context, layout);
 
@@ -221,10 +232,6 @@ public class MainActivity extends AppCompatActivity {
         layout.addView(beautyTreatmentsTitle);
         layout.addView(beautyTreatmentsSpinner);
         addDividerAndMargin(context, layout);
-
-
-
-
 
 
         // Wrap the layout in a CardView
@@ -315,7 +322,8 @@ public class MainActivity extends AppCompatActivity {
                 String endDate = endDate_DatePickerTextView.getText().toString();
 
                 // Get the activity buffet, activity massage, and activity sauna values
-                String activityBuffet = activityBuffetEditText.getText().toString();
+                RadioButton selectedRadioButton = activityBuffetRadioGroup.findViewById(activityBuffetRadioGroup.getCheckedRadioButtonId());
+                String activityBuffet = selectedRadioButton.getText().toString();
                 String activityMassage = activityMassageEditText.getText().toString();
                 String activitySauna = activitySaunaEditText.getText().toString();
                 Boolean isSpecial=isSpecialCheckBox.isChecked();
@@ -329,7 +337,7 @@ public class MainActivity extends AppCompatActivity {
                         Date endDateParse= sdf.parse(endDate);
                         Boolean isWeekEnd=feeCalculator.isWeekend(startDateParse);
                         double roomTypeFee=feeCalculator.calculateRoomTypeFee(isWeekEnd,startDateParse,endDateParse,selectedRoom);
-                        double activityBuffetFee=feeCalculator.calculateBuffetOfKingsFee(isWeekEnd,startDateParse,endDateParse);
+                        double activityBuffetFee=feeCalculator.calculateBuffetOfKingsFee(isWeekEnd,startDateParse,endDateParse,activityBuffet);
                         double activityMassageFee=feeCalculator.calculateMassageFee(isWeekEnd,startDateParse,endDateParse);
                         double activitySaunaFee=feeCalculator.calculateSaunaFee(isWeekEnd,startDateParse,endDateParse);
                         double beautyTreatmentFee=feeCalculator.calculateBeautyTreatmentFee(isWeekEnd,startDateParse,endDateParse,selectedBeautyTreatment);

@@ -1,6 +1,7 @@
 package com.example.rentalchalets.utils;
 
 import android.util.Log;
+import android.widget.RadioButton;
 
 import java.time.LocalDate;
 import java.time.Period;
@@ -57,13 +58,23 @@ public class FeeCalculator {
         long diffInMillis = endDate.getTime() - startDate.getTime();
         return TimeUnit.DAYS.convert(diffInMillis, TimeUnit.MILLISECONDS);
     }
-    public double calculateBuffetOfKingsFee(boolean isWeekend,Date startDate,Date endDate) {
+
+    public double calculateBuffetOfKingsFee(boolean isWeekend,Date startDate,Date endDate, String activityBuffet) {
         double rate = 0;
 
         if (isWeekend) {
             rate = 39;
         } else {
             rate = 32;
+        }
+        Log.w("buffet",activityBuffet);
+        // Multiply by rate based on activityBuffet
+        if (activityBuffet.equals("Everyday")) {
+            rate *= 7;
+        } else if (activityBuffet.equals("Day of Week")) {
+            rate *= 1; // assuming 5 weekdays
+        } else if (activityBuffet.equals("Weekends")) {
+            rate *= 2;
         }
 
         return rate;
