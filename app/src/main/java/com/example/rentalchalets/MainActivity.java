@@ -15,6 +15,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.DatePicker;
 import android.widget.EditText;
@@ -28,6 +29,7 @@ import android.widget.Toast;
 
 import com.example.rentalchalets.utils.DBHelper;
 import com.example.rentalchalets.utils.FeeCalculator;
+import com.example.rentalchalets.utils.ReservationInfo;
 
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -43,10 +45,21 @@ import java.util.logging.Logger;
 
 public class MainActivity extends AppCompatActivity {
 
-    private Spinner spinner;
+
+    //modal inputs
     private Spinner roomTypeSpinner;
     private Spinner beautyTreatmentsSpinner;
-
+    //pages inputs
+    private Spinner spinner;
+    private EditText numPersonsEditTextView;
+    private TextView startDateTextViewTitle;
+    private TextView startDatePicker;
+    private TextView endDateTextViewTitle;
+    private TextView endDatePicker;
+    private EditText firstNameEditTextView;
+    private EditText lastNameEditTextView;
+    private Button reserveButton;
+    private ReservationInfo reservationInfo;
 
     String[] menuItems = {"Select Menu","Rooms", "Buffet", "Access", "Massage", "Sauna", "Beauty Treatment"};
     private List<String> roomsTypeList = new ArrayList<>();
@@ -57,6 +70,7 @@ public class MainActivity extends AppCompatActivity {
 
     public void showDialogModal(Context context,String modalTitle) {
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
+        builder.setPositiveButton("Submit", null);
         //Create Dropdown for Room Type
         // Create a Spinner
         roomTypeSpinner = new Spinner(context);
@@ -77,54 +91,6 @@ public class MainActivity extends AppCompatActivity {
         ArrayAdapter<String> beautyTreatmentsAdapter = new ArrayAdapter<String>(context, android.R.layout.simple_spinner_dropdown_item, beautyTreatmentsList);
         beautyTreatmentsSpinner.setAdapter(beautyTreatmentsAdapter);
 
-
-        //Start_Date Date Picker
-        final TextView startDate_DatePickerTextView = new TextView(context);
-        startDate_DatePickerTextView.setText("YYYY-MM-DD");
-
-        startDate_DatePickerTextView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                // Show the DatePicker Dialog
-                DatePickerDialog startDate_DatePickerDialog = new DatePickerDialog(context, new DatePickerDialog.OnDateSetListener() {
-                    @Override
-                    public void onDateSet(DatePicker view, int year, int month, int dayOfMonth) {
-                        String monthStr = String.format("%02d", month + 1); // Add 1 to month because it's 0-based
-                        String dayStr = String.format("%02d", dayOfMonth); // Format day to 2 digits
-                        startDate_DatePickerTextView.setText(String.format("%d-%s-%s", year, monthStr, dayStr));
-                        startDate_DatePickerTextView.setTextSize(16);
-                        startDate_DatePickerTextView.setTypeface(Typeface.DEFAULT_BOLD);
-                    }
-                }, Calendar.getInstance().get(Calendar.YEAR), Calendar.getInstance().get(Calendar.MONTH), Calendar.getInstance().get(Calendar.DAY_OF_MONTH));
-                startDate_DatePickerDialog.show();
-            }
-        });
-
-        //End_Date Date Picker
-
-        final TextView endDate_DatePickerTextView = new TextView(context);
-        endDate_DatePickerTextView.setText("YYYY-MM-DD");
-
-        endDate_DatePickerTextView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                // Show the DatePicker Dialog
-                DatePickerDialog endDate_DatePickerDialog = new DatePickerDialog(context, new DatePickerDialog.OnDateSetListener() {
-                    @Override
-                    public void onDateSet(DatePicker view, int year, int month, int dayOfMonth) {
-                        // Update the TextView with the selected date
-                        String monthStr = String.format("%02d", month + 1); // Add 1 to month because it's 0-based
-                        String dayStr = String.format("%02d", dayOfMonth); // Format day to 2 digits
-                        endDate_DatePickerTextView.setText(String.format("%d-%s-%s", year, monthStr, dayStr));
-                        endDate_DatePickerTextView.setTextSize(16);
-                        endDate_DatePickerTextView.setTypeface(Typeface.DEFAULT_BOLD);
-                    }
-                }, Calendar.getInstance().get(Calendar.YEAR), Calendar.getInstance().get(Calendar.MONTH), Calendar.getInstance().get(Calendar.DAY_OF_MONTH));
-                endDate_DatePickerDialog.show();
-            }
-        });
-
-
         // Add input fields to the dialog
         LinearLayout layout = new LinearLayout(context);
         layout.setOrientation(LinearLayout.VERTICAL);
@@ -139,30 +105,7 @@ public class MainActivity extends AppCompatActivity {
         layout.addView(roomTitle);
         layout.addView(roomTypeSpinner);
 
-        // Add a divider
-        addDividerToTheLayout(context, layout);
-        addMarginToTheLayout(context,layout);
-
-        // Add a title to the start date picker
-        TextView startDateTitle = new TextView(context);
-        startDateTitle.setText("Start Date");
-        startDateTitle.setTextSize(16);
-        startDateTitle.setTypeface(Typeface.DEFAULT_BOLD);
-
-        layout.addView(startDateTitle);
-        layout.addView(startDate_DatePickerTextView);
-
-        addDividerAndMargin(context, layout);
-
-        // Add a title to the end date picker
-        TextView endDateTitle = new TextView(context);
-        endDateTitle.setText("End Date");
-        endDateTitle.setTextSize(16);
-        endDateTitle.setTypeface(Typeface.DEFAULT_BOLD);
-
-        layout.addView(endDateTitle);
-        layout.addView(endDate_DatePickerTextView);
-
+        // Add a divider and margin
         addDividerAndMargin(context, layout);
 
         //add isSpecial CheckBox
@@ -309,79 +252,63 @@ public class MainActivity extends AppCompatActivity {
                 // Handle the case where no option is selected
             }
         });
-
-        builder.setPositiveButton("Submit", new DialogInterface.OnClickListener() {
+        // Create and show the dialog
+        AlertDialog dialog = builder.create();
+        dialog.show();
+        // Override the positive button's click listener
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(DialogInterface dialog, int which) {
+            public void onClick(View v) {
+                // ReservationInfo object to hold the values
+                reservationInfo = new ReservationInfo();
                 // Get the selected room type and beauty treatment
                 String selectedRoom = (String) roomTypeSpinner.getSelectedItem();
                 String selectedBeautyTreatment = (String) beautyTreatmentsSpinner.getSelectedItem();
 
-                // Get the start and end dates
-                String startDate = startDate_DatePickerTextView.getText().toString();
-                String endDate = endDate_DatePickerTextView.getText().toString();
-
                 // Get the activity buffet, activity massage, and activity sauna values
                 RadioButton selectedRadioButton = activityBuffetRadioGroup.findViewById(activityBuffetRadioGroup.getCheckedRadioButtonId());
-                String activityBuffet = selectedRadioButton.getText().toString();
+                String activityBuffet = selectedRadioButton != null ? selectedRadioButton.getText().toString() : "";
                 String activityMassage = activityMassageEditText.getText().toString();
                 String activitySauna = activitySaunaEditText.getText().toString();
-                Boolean isSpecial=isSpecialCheckBox.isChecked();
+                Boolean isSpecial = isSpecialCheckBox.isChecked();
 
-                // Check if the user has selected a room type and beauty treatment, and entered all the required fields
-                if (!selectedRoom.equals("Select Room Type") && !selectedBeautyTreatment.equals("Select Beauty Treatments") && !startDate.isEmpty() && !endDate.isEmpty() && !activityBuffet.isEmpty() && !activityMassage.isEmpty() && !activitySauna.isEmpty()) {
 
-                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-                    try {
-                        Date startDateParse= sdf.parse(startDate);
-                        Date endDateParse= sdf.parse(endDate);
-                        Boolean isWeekEnd=feeCalculator.isWeekend(startDateParse);
-                        double roomTypeFee=feeCalculator.calculateRoomTypeFee(isWeekEnd,startDateParse,endDateParse,selectedRoom);
-                        double activityBuffetFee=feeCalculator.calculateBuffetOfKingsFee(isWeekEnd,startDateParse,endDateParse,activityBuffet);
-                        double activityMassageFee=feeCalculator.calculateMassageFee(isWeekEnd,startDateParse,endDateParse);
-                        double activitySaunaFee=feeCalculator.calculateSaunaFee(isWeekEnd,startDateParse,endDateParse);
-                        double beautyTreatmentFee=feeCalculator.calculateBeautyTreatmentFee(isWeekEnd,startDateParse,endDateParse,selectedBeautyTreatment);
+                // Perform validation
+                if (!selectedRoom.equals("Select Room Type") &&
+                        !selectedBeautyTreatment.equals("Select Beauty Treatments") &&
+                        !activityBuffet.isEmpty() &&
+                        !activityMassage.isEmpty() &&
+                        !activitySauna.isEmpty()) {
+                    // All required fields are filled, dismiss the dialog
+                    reservationInfo.setSelectedRoom(selectedRoom);
+                    reservationInfo.setSelectedBeautyTreatment(selectedBeautyTreatment);
+                    reservationInfo.setActivityBuffet(activityBuffet);
+                    reservationInfo.setActivityMassage(activityMassage);
+                    reservationInfo.setActivitySauna(activitySauna);
+                    reservationInfo.setSpecial(isSpecial);
+                    reservationInfo.setIsValidFormModal(true);
+                    dialog.dismiss();
 
-                        double calculateTotalFee=roomTypeFee+activityBuffetFee+activityMassageFee+activitySaunaFee+beautyTreatmentFee;
-                        spinner.setSelection(0);
-                        Boolean isInserted= dbHelper.insertBooking(selectedRoom,startDate,endDate,isSpecial,activityBuffet,activityMassage,activitySauna,selectedBeautyTreatment,calculateTotalFee);
-                        if (isInserted) {
-                            Log.v("ÏnsertDB_Success", "Inserted Data");
-
-                            // Create a dialog box
-                            AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(MainActivity.this);
-                            alertDialogBuilder.setTitle("Booking Confirmation");
-                            alertDialogBuilder.setMessage("Your booking is completed. Total fee: " + calculateTotalFee);
-                            alertDialogBuilder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialog, int which) {
-                                    dialog.dismiss();
-                                }
-                            });
-                            AlertDialog alertDialog = alertDialogBuilder.create();
-                            alertDialog.show();
-                        } else {
-                            Log.v("ÏnsertDB_Faild", "Something went wrong.");
-                        }
-                    } catch (ParseException e) {
-                        e.printStackTrace();
-                    }
-
+                    // Proceed with your logic here or call another method
+                    // e.g., processReservation(selectedRoom, selectedBeautyTreatment, activityBuffet, activityMassage, activitySauna, isSpecial);
                 } else {
-                    Toast.makeText(MainActivity.this, "Please select a room type, beauty treatment, and enter all the required fields", Toast.LENGTH_SHORT).show();
-                }                // Handle the OK button click
-
+                    // Show error message or highlight the fields that need to be filled
+                    Toast.makeText(context, "Please fill all required fields", Toast.LENGTH_SHORT).show();
+                    // You can also set error states for the EditText fields or show specific messages for each field
+                }
             }
         });
+
+        // Set the negative button listener (optional)
         builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 // Handle the Cancel button click
-                spinner.setSelection(0);
+                spinner.setSelection(0); // Reset spinner selection if needed
+                dialog.dismiss(); // Dismiss the dialog
             }
         });
-        AlertDialog dialog = builder.create();
-        dialog.show();
+
     }
 
     private void addDividerAndMargin(Context context, LinearLayout layout) {
@@ -467,8 +394,158 @@ public class MainActivity extends AppCompatActivity {
         });
 
 
+        //Pages inputs
+        startDateTextViewTitle = findViewById(R.id.start_date_title);
+        startDatePicker = findViewById(R.id.start_date_picker);
 
+        startDatePicker.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showStartDatePickerDialog();
+            }
+        });
+
+        endDateTextViewTitle = findViewById(R.id.end_date_title);
+        endDatePicker = findViewById(R.id.end_date_picker);
+
+        endDatePicker.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showEndDatePickerDialog();
+            }
+        });
+
+
+        firstNameEditTextView=findViewById(R.id.first_name_input);
+        lastNameEditTextView=findViewById(R.id.last_name_input);
+        numPersonsEditTextView = findViewById(R.id.num_persons_input);
+        numPersonsEditTextView.setEnabled(false);
+        Button decreaseButton = findViewById(R.id.decrease_button);
+        Button increaseButton = findViewById(R.id.increase_button);
+        reserveButton = findViewById(R.id.reserve_button);
+        // Set click listeners
+        decreaseButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                decreaseNumPersons();
+            }
+        });
+
+        increaseButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                increaseNumPersons();
+            }
+        });
+
+        // Set click listener for Reserve button
+        reserveButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                reserve();
+            }
+        });
+
+    }
+    private void showStartDatePickerDialog() {
+        DatePickerDialog datePickerDialog = new DatePickerDialog(this, new DatePickerDialog.OnDateSetListener() {
+            @Override
+            public void onDateSet(DatePicker view, int year, int month, int dayOfMonth) {
+                String monthStr = String.format("%02d", month + 1); // Add 1 to month because it's 0-based
+                String dayStr = String.format("%02d", dayOfMonth); // Format day to 2 digits
+                startDatePicker.setText(String.format("%d-%s-%s", year, monthStr, dayStr));
+            }
+        }, Calendar.getInstance().get(Calendar.YEAR), Calendar.getInstance().get(Calendar.MONTH), Calendar.getInstance().get(Calendar.DAY_OF_MONTH));
+        datePickerDialog.show();
+    }
+
+    private void showEndDatePickerDialog() {
+        DatePickerDialog datePickerDialog = new DatePickerDialog(this, new DatePickerDialog.OnDateSetListener() {
+            @Override
+            public void onDateSet(DatePicker view, int year, int month, int dayOfMonth) {
+                String monthStr = String.format("%02d", month + 1); // Add 1 to month because it's 0-based
+                String dayStr = String.format("%02d", dayOfMonth); // Format day to 2 digits
+                endDatePicker.setText(String.format("%d-%s-%s", year, monthStr, dayStr));
+            }
+        }, Calendar.getInstance().get(Calendar.YEAR), Calendar.getInstance().get(Calendar.MONTH), Calendar.getInstance().get(Calendar.DAY_OF_MONTH));
+        datePickerDialog.show();
+    }
+
+    private void decreaseNumPersons() {
+        int currentNum = Integer.parseInt(numPersonsEditTextView.getText().toString());
+        if (currentNum > 1) {
+            numPersonsEditTextView.setText(String.valueOf(currentNum - 1));
+        }
+    }
+
+    private void increaseNumPersons() {
+        int currentNum = Integer.parseInt(numPersonsEditTextView.getText().toString());
+        numPersonsEditTextView.setText(String.valueOf(currentNum + 1));
     }
 
 
+    private void reserve() {
+        String firstName = firstNameEditTextView.getText().toString().trim();
+        String lastName = lastNameEditTextView.getText().toString().trim();
+        int numberOfPersons = Integer.parseInt(numPersonsEditTextView.getText().toString());
+        String startDate = startDatePicker.getText().toString();
+        String endDate = endDatePicker.getText().toString();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+
+       if(reservationInfo == null){
+           Toast.makeText(this, "Fill the modal", Toast.LENGTH_SHORT).show();
+           return;
+       }
+        // Perform validation or additional processing if needed
+        if (firstName.isEmpty() || lastName.isEmpty() || startDate.equals("YYYY-MM-DD") || endDate.equals("YYYY-MM-DD")) {
+            Toast.makeText(this, "Please fill the all required fields.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+
+//        try {
+//            Date startDateParse= sdf.parse(startDate);
+//            Date endDateParse= sdf.parse(endDate);
+//
+////            Boolean isWeekEnd=feeCalculator.isWeekend(startDateParse);
+////            double roomTypeFee=feeCalculator.calculateRoomTypeFee(isWeekEnd,startDateParse,endDateParse,selectedRoom);
+////            double activityBuffetFee=feeCalculator.calculateBuffetOfKingsFee(isWeekEnd,startDateParse,endDateParse,activityBuffet);
+////            double activityMassageFee=feeCalculator.calculateMassageFee(isWeekEnd,startDateParse,endDateParse);
+////            double activitySaunaFee=feeCalculator.calculateSaunaFee(isWeekEnd,startDateParse,endDateParse);
+////            double beautyTreatmentFee=feeCalculator.calculateBeautyTreatmentFee(isWeekEnd,startDateParse,endDateParse,selectedBeautyTreatment);
+////
+////            double calculateTotalFee=roomTypeFee+activityBuffetFee+activityMassageFee+activitySaunaFee+beautyTreatmentFee;
+////            spinner.setSelection(0);
+//
+////            Boolean isInserted= dbHelper.insertBooking(selectedRoom,startDate,endDate,isSpecial,activityBuffet,activityMassage,activitySauna,selectedBeautyTreatment,calculateTotalFee);
+////            if (isInserted) {
+////                Log.v("ÏnsertDB_Success", "Inserted Data");
+////                // Create a dialog box
+////                AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(MainActivity.this);
+////                alertDialogBuilder.setTitle("Booking Confirmation");
+////                alertDialogBuilder.setMessage("Your booking is completed. Total fee: " + calculateTotalFee);
+////                alertDialogBuilder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+////                    @Override
+////                    public void onClick(DialogInterface dialog, int which) {
+////                        dialog.dismiss();
+////                    }
+////                });
+////                AlertDialog alertDialog = alertDialogBuilder.create();
+////                alertDialog.show();
+////            } else {
+////                Log.v("ÏnsertDB_Faild", "Something went wrong.");
+////            }
+//
+//
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
+//
+//
+//
+//
+//         Perform reservation logic here (e.g., show a confirmation message)
+        String message = "Reservation successful for " + firstName + " " + lastName;
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+    }
 }
